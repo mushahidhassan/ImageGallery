@@ -8,7 +8,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
 import android.util.Log;
-
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,7 +20,7 @@ public class Common {
     public static class Keys{
         public static String SHARED_PREFS = "app_shared_pref";
         public static String PREF_GALLERY = "gallery_array";
-        public static int PICK_IMAGE_REQUEST = 1;
+        public static int PICK_GALLERY_IMAGE_REQUEST = 1;
         public static int CAMERA_REQUEST = 2;
     }
     public static class SharedPref{

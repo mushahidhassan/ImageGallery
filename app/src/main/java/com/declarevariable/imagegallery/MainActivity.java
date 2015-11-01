@@ -21,16 +21,13 @@ import android.widget.GridView;
 import android.widget.Toast;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 public class MainActivity extends AppCompatActivity {
 
     private String TAG ="MainActivity";
     private int itemPosition = -1;//for storing item relative to gridView's position
-    //ArrayList<String> galleryList;
     GridAdapter gridAdapter;//for invalidating data set
-    private Boolean check, replace = false;
-    private View _view;//refrence to a view
+    private Boolean replace = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,17 +40,11 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, "Refrain from using long press on Grid Items", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });
 
-            //ifelse
-            /*ImageView iv_test = (ImageView) findViewById(R.id.iv_image_test);
-            int Test = galleryList.size();
-            String item  = galleryList.get(1);
-            Bitmap bitmap = Common.BitmapConversion.stringToImage(item);
-            iv_test.setImageBitmap(bitmap);*/
         try {
             setUpGridView();
         }catch (Exception e){
@@ -62,34 +53,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void setUpGridView(){
-        //setting up gridView and items
-
         GridView mGridView = (GridView) findViewById(R.id.galleryGrid);
+        //mGridView.setLongClickable(false);
         gridAdapter = new GridAdapter(Common.Arr.imagesArr, this/*, galleryList*/);
         try {
             mGridView.setAdapter(gridAdapter);
         } catch (Exception e) {
             Log.e(TAG + " setUpGridView", e.getLocalizedMessage());
         }
-        registerForContextMenu(mGridView);
+        //registerForContextMenu(mGridView);
         mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                _view = view;
                 itemPosition = position;
-
                 ArrayList<String> galleryList = new ArrayList<String>();
                 galleryList = Common.SharedPref.get(getApplicationContext());
-
                 if (position < galleryList.size()) {
-                    check = true;
-                    view.showContextMenu();
-                }else if (position == galleryList.size()) {
-                    check = false;
-                    view.showContextMenu();
-                }
-                else if (position > galleryList.size()){
-                    Toast.makeText(getApplicationContext(), "You need to select the item which has Add symbol on it", Toast.LENGTH_SHORT ).show();
+                    otherItemOptoins();
+                } else if (position == galleryList.size()) {
+                    addItemOptoins();
+                } else if (position > galleryList.size()) {
+                    Toast.makeText(getApplicationContext(), "You need to select the item which has Add symbol on it", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -98,41 +82,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
-        //TextView text = (TextView) v.findViewById(R.id.btitle);
-        //CharSequence itemTitle = text.getText();
-        //menu.setHeaderTitle(itemTitle);
         MenuInflater inflater = getMenuInflater();
-        if (check == true) {
-            inflater.inflate(R.menu.context_menu, menu);
-            check = false;
-        }else {
-            inflater.inflate(R.menu.context_menu_first, menu);
-        }
+        inflater.inflate(R.menu.context_menu, menu);
     }
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.replace:
-                //check = true;
-                //_view.showContextMenu();
-                addItemOptoins();
-                return true;
-            case R.id.camera:
-                captureImage();
-                return true;
-            case R.id.gallery:
-                openGallery();
-                return true;
-            case R.id.delete:
-                deleteImageFromGalleryList();
-            case R.id.make_main_image:
-                makeItemMainInGalleryList();
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-        //return super.onContextItemSelected(item);
+        return super.onContextItemSelected(item);
     }
+
 
     private void captureImage(){
         try {
@@ -148,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent();
             intent.setType("image/*");// images only
             intent.setAction(Intent.ACTION_GET_CONTENT);
-            startActivityForResult(Intent.createChooser(intent, "Select Picture"), Common.Keys.PICK_IMAGE_REQUEST);
+            startActivityForResult(Intent.createChooser(intent, "Select Picture"), Common.Keys.PICK_GALLERY_IMAGE_REQUEST);
         }catch (Exception e){
             Log.e(TAG, e.getLocalizedMessage());
         }
@@ -158,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         try {
-            if (requestCode == Common.Keys.PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            if (requestCode == Common.Keys.PICK_GALLERY_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
                 Uri uri = data.getData();
                 try {
                     Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
@@ -186,12 +144,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception e) {
-            Toast.makeText(this, "Error While getting back to the MainActivity", Toast.LENGTH_LONG).show();
+            e.getLocalizedMessage();
+            Toast.makeText(this, "Error While getting back to the "+ TAG, Toast.LENGTH_LONG).show();
         }
     }
 
     private void addImageToGalleryList(String item){
-        //1. get shared pref and check for total tiems
+        //1. get shared pref and check for total items
         //2. then add the item at proper location
         //3. edit shared_pref
         ArrayList<String> gallery = Common.SharedPref.get(this);
@@ -203,12 +162,12 @@ public class MainActivity extends AppCompatActivity {
         if(gallery.size()>0){
             Common.SharedPref.update(this, gallery.toString());
         }
-        gridAdapter.setGalleryList(gallery);
+        gridAdapter.updateList(gallery);
     }
 
     private void deleteImageFromGalleryList(){
-        //1. get shared pref and check for total tiems
-        //2. then add the item at proper location
+        //1. get shared pref and check for total item
+        //2. then remove the item at proper location
         //3. edit shared_pref
         ArrayList<String> gallery = Common.SharedPref.get(this);
         //ArrayList<String> newGallery = new ArrayList<String>();
@@ -220,7 +179,6 @@ public class MainActivity extends AppCompatActivity {
 
             /*for(String temp: gallery){
                 if(temp == gallery.get(itemPosition)){
-
                 }
                 else{
                     newGallery.add(temp);
@@ -229,12 +187,12 @@ public class MainActivity extends AppCompatActivity {
             test = gallery.size();
             Common.SharedPref.update(this, gallery.toString());
         }
-        gridAdapter.setGalleryList(gallery);
+        gridAdapter.updateList(gallery);
     }
 
     private void makeItemMainInGalleryList() {
-        //1. get shared pref and check for total tiems
-        //2. then add the item at proper location
+        //1. get shared pref and check for total items
+        //2. then swap the item at proper location
         //3. edit shared_pref
         if (itemPosition > 0) {
             ArrayList<String> gallery = Common.SharedPref.get(this);
@@ -243,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
                 gallery.set(itemPosition, gallery.get(0));
                 gallery.set(0, temp);
                 Common.SharedPref.update(this, gallery.toString());
-                gridAdapter.setGalleryList(gallery);
+                gridAdapter.updateList(gallery);
             }else {
                 Toast.makeText(this, "Already Main Item",Toast.LENGTH_LONG).show();
             }
@@ -251,15 +209,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void replaceImageInGalleryList(String item){
-        //1. get shared pref and check for total tiems
-        //2. then add the item at proper location
+        //1. get shared pref and check for total items
+        //2. then replace the item at proper location
         //3. edit shared_pref
         ArrayList<String> gallery = Common.SharedPref.get(this);
         if(!gallery.isEmpty()) {
             gallery.set(itemPosition, item);
             Common.SharedPref.update(this, gallery.toString());
         }
-        gridAdapter.setGalleryList(gallery);
+        gridAdapter.updateList(gallery);
         replace = false;
     }
 
@@ -291,12 +249,10 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(DialogInterface dialog, int which) {
                 // dialog.cancel();
                 if (which == 0) {
-                    replace = true;
-                     captureImage();
+                    captureImage();
 
                 } else if (which == 1) {
-                    replace = true;
-                     openGallery();
+                    openGallery();
                 }
             }
         };
@@ -304,4 +260,23 @@ public class MainActivity extends AppCompatActivity {
         Common.CustomDialog.listDialog(MainActivity.this, items, posListener);
     }
 
+    private void otherItemOptoins() {
+        DialogInterface.OnClickListener posListener = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // dialog.cancel();
+                if (which == 0) {
+                    dialog.cancel();
+                    replace = true;
+                    addItemOptoins();
+                } else if (which == 1) {
+                    deleteImageFromGalleryList();
+                } else if (which == 2) {
+                    makeItemMainInGalleryList();
+                }
+            }
+        };
+        String[] items = { "Replace", "Delete" ,"Make Main" };
+        Common.CustomDialog.listDialog(MainActivity.this, items, posListener);
+    }
 }
